@@ -3,16 +3,16 @@
 Remplace TOUTES les images de TOUS les articles via Pexels.
 """
 import os, re, json, urllib.request, urllib.parse
-
+ 
 PEXELS_KEY = os.environ.get('PEXELS_API_KEY', '')
-
+ 
 FALLBACK = {
     'recettes': 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?w=1200',
     'sante':    'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?w=1200',
     'farines':  'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?w=1200',
     'guides':   'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?w=1200',
 }
-
+ 
 def get_pexels_image(titre, cat):
     try:
         query = ' '.join(titre.replace(':', '').replace('—', '').split()[:5])
@@ -24,7 +24,7 @@ def get_pexels_image(titre, cat):
     except Exception as e:
         print(f'  Pexels erreur: {e}')
     return FALLBACK.get(cat)
-
+ 
 count = 0
 for cat in ['recettes', 'sante', 'farines', 'guides']:
     if not os.path.exists(cat):
@@ -64,7 +64,6 @@ for cat in ['recettes', 'sante', 'farines', 'guides']:
         open(path, 'w').write(html)
         count += 1
         print(f'✅ {cat}/{f.replace(".html","")} → {new_img[:60]}...')
-
+ 
 print(f'\n✅ {count} articles mis à jour avec images Pexels')
-Terminé
-Sur GitHub :
+ 

@@ -1,0 +1,22 @@
+name: Fix Images — Une seule fois
+on:
+  workflow_dispatch:  # Lance manuellement une seule fois
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Corriger les images et mettre à jour les index
+        run: python3 fix_images.py
+
+      - name: Commit et push
+        run: |
+          git config --global user.name 'Robot SEO — Le Club Sans Gluten'
+          git config --global user.email 'bot@leclubsansgluten.com'
+          git add .
+          git commit -m "🖼️ Fix images — articles corrigés" || echo "Rien à commiter"
+          git push

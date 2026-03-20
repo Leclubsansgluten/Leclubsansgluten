@@ -35,7 +35,11 @@ def get_pexels_image(titre, cat):
         # Limiter à 5 mots pour une meilleure pertinence
         query = ' '.join(query.split()[:5])
         url = f'https://api.pexels.com/v1/search?query={urllib.parse.quote(query)}&per_page=1&orientation=landscape'
-        req = urllib.request.Request(url, headers={'Authorization': PEXELS_KEY})
+        req = urllib.request.Request(url, headers={
+            'Authorization': PEXELS_KEY,
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+            'Accept': 'application/json',
+        })
         data = json2.loads(urllib.request.urlopen(req, timeout=10).read())
         if data.get('photos'):
             img_url = data['photos'][0]['src']['large2x']

@@ -85,22 +85,30 @@
   function filterHome(cat,btn){
     document.querySelectorAll('.subcats .subcat').forEach(function(b){b.classList.remove('active')});
     btn.classList.add('active');
+    if(cat==='toutes'){
+      document.querySelectorAll('#recettesGrid .card').forEach(function(c){c.style.display='';});
+      return;
+    }
+    var matched=[];
     document.querySelectorAll('#recettesGrid .card').forEach(function(c){
-      var th=c.getAttribute('data-thematique')||'';
-      var href=c.getAttribute('href')||'';
-      var title=(c.querySelector('.card-title')||{}).textContent||'';
-      var text=(href+' '+title).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
-      if(cat==='toutes'){c.style.display='';return;}
+      var href=(c.getAttribute('href')||'').toLowerCase();
+      var title=(c.querySelector('.card-title')||{textContent:''}).textContent.toLowerCase();
+      var text=href+' '+title;
       var show=false;
-      if(cat==='rapide'&&/rapide|express|[0-9]+ min|vite/.test(text))show=true;
-      if(cat==='pdej'&&/petit.dejeuner|breakfast|muffin|pancake|granola|gouter|biscuit/.test(text))show=true;
-      if(cat==='entrees'&&/soupe|veloute|minestrone|bouillon|salade|entree/.test(text))show=true;
-      if(cat==='plats'&&/lasagne|quiche|pizza|gratin|curry|risotto|wok|poulet|boeuf/.test(text))show=true;
-      if(cat==='desserts'&&/gateau|tarte|brownie|cookie|muffin|cake|dessert|fondant|citron|chocolat|tatin/.test(text))show=true;
-      if(cat==='pain'&&/pain|baguette|brioche|chataigne|sarrasin|galette/.test(text))show=true;
-      if(th&&th===cat)show=true;
-      c.style.display=show?'':'none';
+      if(cat==='rapide')show=/rapide|express|vite/.test(text);
+      if(cat==='pdej')show=/petit|dejeuner|breakfast|muffin|pancake|granola|gouter|biscuit/.test(text);
+      if(cat==='entrees')show=/soupe|veloute|minestrone|bouillon|salade|entree/.test(text);
+      if(cat==='plats')show=/lasagne|quiche|pizza|gratin|curry|risotto/.test(text);
+      if(cat==='desserts')show=/gateau|tarte|brownie|cookie|fondant|chocolat|citron|anniversaire|dessert/.test(text);
+      if(cat==='pain')show=/pain|baguette|brioche|chataigne|sarrasin|galette|mie/.test(text);
+      if(show)matched.push(c);
+      c.style.display='none';
     });
+    if(matched.length===0){
+      document.querySelectorAll('#recettesGrid .card').forEach(function(c){c.style.display='';});
+    } else {
+      matched.forEach(function(c){c.style.display='';});
+    }
   }
   </script>
   <div class="articles-grid" id="recettesGrid">

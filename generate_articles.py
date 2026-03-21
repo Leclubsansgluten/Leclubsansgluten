@@ -288,44 +288,98 @@ FORMAT EXACT :
 
 
 def build_homepage():
-    """Met a jour uniquement les cartes recettes dans recettesGrid. Ne touche a rien d autre."""
+    """Met a jour les sections dynamiques entre les marqueurs DEBUT/FIN."""
     import re as r2
     if not os.path.exists('index.html'):
         return
     html = open('index.html').read()
-    if 'recettesGrid' not in html:
-        print('  ⚠️ recettesGrid non trouve dans index.html')
+
+    DEBUT = '<!-- SECTIONS_AUTO_DEBUT -->'
+    FIN   = '<!-- SECTIONS_AUTO_FIN -->'
+
+    if DEBUT not in html or FIN not in html:
+        print('  ⚠️ Marqueurs non trouves dans index.html - homepage non modifiee')
         return
 
-    # Recuperer les 6 recettes les plus recentes
-    if not os.path.exists('recettes'):
-        return
-    files = [(os.path.getmtime(os.path.join('recettes',f)), f)
-             for f in os.listdir('recettes') if f.endswith('.html') and f != 'index.html']
-    files.sort(reverse=True)
-    
-    cards = ''
-    for _, f in files[:6]:
-        fhtml = open(os.path.join('recettes', f)).read()
-        tm = r2.search(r'<title>(.*?)[—-]', fhtml)
+    labels = {'recettes':'Recettes','sante':'Sante','farines':'Farines','guides':'Conseils'}
+    emojis = {'recettes':'Recettes','sante':'Sante','farines':'Farines','guides':'Conseils'}
+    emoji_icons = {'recettes':'🍞','sante':'🌿','farines':'⚖️','guides':'📖'}
+
+    def get_cards(cat, limit=4):
+        if not os.path.exists(cat): return ''
+        files = [(os.path.getmtime(os.path.join(cat,f)), f)
+                 for f in os.listdir(cat) if f.endswith('.html') and f != 'index.html']
+        files.sort(reverse=True)
+        out = ''
+        for _, f in files[:limit]:
+            fhtml = open(os.path.join(cat, f)).read()
+            tm = r2.search(r'<title>(.*?)[—\-]', fhtml)
+            title = tm.group(1).strip() if tm else f.replace('-',' ').replace('.html','')
+            im = r2.search(r'<img class="article-hero"[^>]+src="([^"]+)"', fhtml)
+            if not im: im = r2.search(r'"image":"([^"]+)"', fhtml)
+            img = im.group(1) if im else ''
+            emoji = emoji_icons.get(cat,'')
+            label = labels.get(cat, cat)
+            out += ('<a href="/' + cat + '/' + f + '" class="card">'
+                    '<div class="card-img-wrap"><img class="card-img" src="' + img + '" alt="' + title + '" loading="lazy"/></div>'
+                    '<div class="card-body"><div class="card-cat">' + emoji + ' ' + label + '</div>'
+                    '<div class="card-title">' + title + '</div></div></a>\n')
+        return out
+
+    # Derniers articles
+    all_arts = []
+    for cat in ['recettes','sante','farines','guides']:
+        if not os.path.exists(cat): continue
+        for f in os.listdir(cat):
+            if not f.endswith('.html') or f == 'index.html': continue
+            all_arts.append((os.path.getmtime(os.path.join(cat,f)), cat, f))
+    all_arts.sort(reverse=True)
+    derniers_cards = ''
+    for _, cat, f in all_arts[:6]:
+        fhtml = open(os.path.join(cat, f)).read()
+        tm = r2.search(r'<title>(.*?)[—\-]', fhtml)
         title = tm.group(1).strip() if tm else f.replace('-',' ').replace('.html','')
         im = r2.search(r'<img class="article-hero"[^>]+src="([^"]+)"', fhtml)
         if not im: im = r2.search(r'"image":"([^"]+)"', fhtml)
         img = im.group(1) if im else ''
-        cards += ('<a href="/recettes/' + f + '" class="card">'
-                  '<div class="card-img-wrap"><img class="card-img" src="' + img + '" alt="' + title + '" loading="lazy"/></div>'
-                  '<div class="card-body"><div class="card-cat">🍞 Recettes</div>'
-                  '<div class="card-title">' + title + '</div></div></a>\n')
+        emoji = emoji_icons.get(cat,'')
+        label = labels.get(cat, cat)
+        derniers_cards += ('<a href="/' + cat + '/' + f + '" class="card">'
+                          '<div class="card-img-wrap"><img class="card-img" src="' + img + '" alt="' + title + '" loading="lazy"/></div>'
+                          '<div class="card-body"><div class="card-cat">' + emoji + ' ' + label + '</div>'
+                          '<div class="card-title">' + title + '</div></div></a>\n')
 
-    # Remplacer UNIQUEMENT le contenu de recettesGrid
-    html = r2.sub(
-        r'(<div class="articles-grid" id="recettesGrid">)(.*?)(</div>)',
-        lambda m: m.group(1) + '\n' + cards + '  ' + m.group(3),
-        html, flags=r2.DOTALL, count=1
-    )
+    def make_section(cat, nb=4):
+        emoji = emoji_icons.get(cat,'')
+        label = labels.get(cat, cat)
+        cards = get_cards(cat, nb)
+        return ('<div class="home-wrap">\n'
+                '  <div class="section-head">\n'
+                '    <h2 class="section-title">' + emoji + ' ' + label + '</h2>\n'
+                '    <a class="section-link" href="/' + cat + '/">Tout voir &rarr;</a>\n'
+                '  </div>\n'
+                '  <div class="articles-grid">\n' + cards + '  </div>\n'
+                '</div>\n')
+
+    derniers = ('<div class="home-wrap">\n'
+                '  <div class="section-head">\n'
+                '    <h2 class="section-title">🆕 Derniers articles</h2>\n'
+                '  </div>\n'
+                '  <div class="articles-grid">\n' + derniers_cards + '  </div>\n'
+                '</div>\n')
+
+    new_content = (derniers +
+                   make_section('sante') +
+                   make_section('farines') +
+                   make_section('guides'))
+
+    # Remplacer entre les marqueurs
+    debut_pos = html.find(DEBUT) + len(DEBUT)
+    fin_pos = html.find(FIN)
+    html = html[:debut_pos] + '\n' + new_content + html[fin_pos:]
 
     open('index.html', 'w').write(html)
-    print('  ✅ recettesGrid mis a jour - rien d autre touche')
+    print('  ✅ Sections auto mises a jour')
 
 
 def build_search_index():

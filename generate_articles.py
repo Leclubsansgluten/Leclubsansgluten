@@ -277,6 +277,23 @@ function applyFilters(){var q=document.getElementById("catSearch").value.toLower
 </div></footer>
 </body></html>"""
 
+    # Ajouter le script auto-filter pour recettes
+    if cat == 'recettes':
+        auto_filter = '''<script>
+window.addEventListener('load', function() {
+  var params = new URLSearchParams(window.location.search);
+  var cat = params.get('cat');
+  if(cat) {
+    var btn = document.querySelector('.subcat[onclick*="' + cat + '"]');
+    if(btn) {
+      btn.click();
+      setTimeout(function(){ window.scrollTo({top:0}); }, 100);
+    }
+  }
+});
+</script>'''
+        idx = idx.replace('</body>', auto_filter + '\n</body>')
+
     open(f'{cat}/index.html', 'w').write(idx)
     print(f'  ✅ Index {cat} — {len(files)} articles')
 
